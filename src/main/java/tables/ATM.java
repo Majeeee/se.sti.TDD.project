@@ -1,30 +1,19 @@
 package tables;
 
-public class ATM {
-    private int ATMId;
-    private String adress;
+public interface ATM {
+    // ─────────────────────────────────────────────────────────────────────
+    // Autentisering & sessionshantering
+    void insertCard(String cardNumber);
+    void enterPin(int pin);
+    void ejectCard();
 
-    @Override
-    public String toString() {
-        return "ATM{" +
-                "ATMId=" + ATMId +
-                ", adress='" + adress + '\'' +
-                '}';
-    }
+    // ─────────────────────────────────────────────────────────────────────
+    // Transaktioner
+    void withdrawCash(double amount);
+    void depositCash(double amount);
 
-    public int getATMId() {
-        return ATMId;
-    }
-
-    public void setATMId(int ATMId) {
-        this.ATMId = ATMId;
-    }
-
-    public String getAdress() {
-        return adress;
-    }
-
-    public void setAdress(String adress) {
-        this.adress = adress;
-    }
+    // ─────────────────────────────────────────────────────────────────────
+    //  Saldo & kvitto
+    double checkBalance();
+    void showReceipt();
 }

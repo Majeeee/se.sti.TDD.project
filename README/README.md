@@ -1,22 +1,18 @@
-# TDD ATM Projekt
+TDD ATM Projekt
 
-Detta är ett ATM-simuleringssystem utvecklat i Java med TDD och JUnit 5.
+Detta är ett ATM-simuleringssystem utvecklat i Java med principerna för Testdriven utveckling (TDD) och JUnit 5. 
+Systemet simulerar grundläggande bankomatfunktioner och använder en SQLite-databas för att lagra transaktioner.
 
-## Funktioner
-- Visa saldo
-- Sätta in och ta ut pengar
-- Visa kvitto och historik
-- Spara transaktioner i SQLite
-- Återskapa databastabell
 
-## Struktur
-- `Main.java` – programstart
-- `MyATM.java` – logik för användarinteraktion
-- `DBconnection/` – hantering av databas
-- `tables/` – SQL-skript
-- `test/` – JUnit-tester
 
-## Bygga och köra
-```bash
-mvn clean compile
-mvn test
+Funktioner
+ Inloggning med användarnamn och lösenord
+ Visa aktuellt saldo
+ Sätta in pengar
+ Ta ut pengar
+ Visa kvitto och transaktionshistorik
+ Rensa och återskapa databastabellen TRANSACTIONS
+
+
+
+Projektstruktur

@@ -1,25 +1,36 @@
 package se.sti.TDD.project;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-class MyUserTest {
+/**
+ * Enhetstester för MyUser-klassen.
+ * Verifierar att alla getter-metoder returnerar korrekt data.
+ */
+public class MyUserTest {
 
+    // ══════════════════════════════════════════════════════════════════════
+    // 🧪 Test: Namn ska returneras korrekt
     @Test
-    void getNameShouldReturnEmptyString() {
-        MyUser user = new MyUser();
-        assertEquals("", user.getName());
+    void getNameShouldReturnExpectedString() {
+        MyUser user = new MyUser("Alice", 1, "123-456");
+        assertEquals("Alice", user.getName());
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // 🧪 Test: Användar-ID ska returneras korrekt
     @Test
-    void getUserIdShouldReturnZero() {
-        MyUser user = new MyUser();
-        assertEquals(0, user.getUserId());
+    void getUserIdShouldReturnExpectedValue() {
+        MyUser user = new MyUser("Bob", 42, "987-654");
+        assertEquals(42, user.getUserId());
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // 🧪 Test: Kontonummer ska returneras korrekt
     @Test
-    void getAccountNumberShouldReturnEmptyString() {
-        MyUser user = new MyUser();
-        assertEquals("", user.getAccountNumber());
+    void getAccountNumberShouldReturnExpectedValue() {
+        MyUser user = new MyUser("Charlie", 99, "ACC-001");
+        assertEquals("ACC-001", user.getAccountNumber());
     }
 }
