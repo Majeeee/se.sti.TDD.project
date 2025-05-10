@@ -19,7 +19,7 @@ public class MyBank implements Bank {
         if (amount > 0) {
             balance += amount;
         } else {
-            System.out.println("❌ Ogiltigt belopp att sätta in.");
+            System.out.println(" Ogiltigt belopp att sätta in.");
         }
     }
 
@@ -30,7 +30,7 @@ public class MyBank implements Bank {
         if (amount > 0 && amount <= balance) {
             balance -= amount;
         } else {
-            System.out.println("❌ Ogiltigt uttag. Kontrollera saldo eller belopp.");
+            System.out.println(" Ogiltigt uttag. Kontrollera saldo eller belopp.");
         }
     }
 

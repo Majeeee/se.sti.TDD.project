@@ -5,49 +5,38 @@ import se.sti.TDD.project.DBconnection.Database;
 import se.sti.TDD.project.Interfaces.ATM;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.Scanner;
 
 /**
- * MyATM är en implementation av ATM-interfacet.
- * Hanterar inloggning, saldo, insättning, uttag, kvitto och transaktionshistorik.
+ * MyATM är huvudklassen för ATM-simulatorn.
+ * Den hanterar inloggning, kontohantering och transaktioner.
  */
 public class MyATM implements ATM {
 
     // ══════════════════════════════════════════════════════════════════════
-    // 🔧 Fält / Instansvariabler
+    // 🔧 Instansvariabler
+
     private final Scanner scanner = new Scanner(System.in);
     private boolean running = true;
     private int loggedInUserId = -1;
     private String loggedInUsername = "";
 
+    private final TransactionService transactionService = new TransactionService();
+    private final AccountManager accountManager = new AccountManager();
+
     // ══════════════════════════════════════════════════════════════════════
-    // Inloggning och autentisering
+    // ATM Interface-implementering
 
     @Override
-    public void insertCard(String cardNumber) {
-        // Ej implementerat i denna simulator
-    }
+    public void insertCard(String cardNumber) {}
 
     @Override
-    public void enterPin(int pin) {
-        // Ej implementerat i denna simulator
-    }
+    public void enterPin(int pin) {}
 
     @Override
-    public void ejectCard() {
-        System.out.println("Du är nu utloggad.");
-        loggedInUserId = -1;
-        loggedInUsername = "";
-    }
-
-    /**
-     * Loggar in användare via databas.
-     */
     public boolean login() {
         System.out.print("Användarnamn: ");
         String usernameInput = scanner.nextLine().trim().toLowerCase();
-
         System.out.print("Lösenord: ");
         String passwordInput = scanner.nextLine().trim();
 
@@ -77,169 +66,73 @@ public class MyATM implements ATM {
         return false;
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // Transaktioner
+    @Override
+    public void ejectCard() {
+        System.out.println(" Du är nu utloggad.");
+        loggedInUserId = -1;
+        loggedInUsername = "";
+    }
 
     @Override
     public void withdrawCash(double amount) {
-        if (amount <= 0) {
-            System.out.println("Beloppet måste vara större än 0.");
-            return;
-        }
-
-        double balance = checkBalance(false);
-        if (amount > balance) {
-            System.out.println("Otillräckligt saldo.");
-            return;
-        }
-
-        saveTransaction("Uttag", -amount);
-        skrivUtKvitto("Uttag", -amount, checkBalance(false));
+        taUtPengar(amount);
     }
 
     @Override
     public void depositCash(double amount) {
-        if (amount <= 0) {
-            System.out.println("Beloppet måste vara större än 0.");
-            return;
-        }
-
-        saveTransaction("Insättning", amount);
-        skrivUtKvitto("Insättning", amount, checkBalance(false));
+        sättInPengar(amount);
     }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // Saldo & kvitto
 
     @Override
     public double checkBalance() {
-        return checkBalance(true);
-    }
-
-    public double checkBalance(boolean printReceipt) {
-        double balance = 0;
-        String sql = "SELECT SUM(amount) as balance FROM transactions WHERE userId = ?";
-
-        try (Connection conn = JDBCUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, loggedInUserId);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    balance = rs.getDouble("balance");
-                }
-            }
-
-            if (printReceipt) {
-                skrivUtKvitto("Saldo", 0, balance);
-            }
-
-        } catch (Exception e) {
-            System.out.println(" Fel vid hämtning av saldo: " + e.getMessage());
-        }
-
-        return balance;
+        return visaSaldo();
     }
 
     @Override
     public void showReceipt() {
-        showLastTransaction();
+        visaKvitto();
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // Meny och huvudloop
+    // Menyfunktioner
 
-    public boolean ProjectChoice() throws Exception {
-        System.out.println("\n────────────────────────────────────────");
-        System.out.println(" Inloggad som: " + loggedInUsername);
-        System.out.println("────────────────────────────────────────");
-        System.out.println(" Huvudmeny:");
-        System.out.println("0  Logga ut");
-        System.out.println("1  Visa saldo");
-        System.out.println("2  Sätt in");
-        System.out.println("3  Ta ut");
-        System.out.println("4  Visa senaste kvitto");
-        System.out.println("5  Avsluta");
-        System.out.println("6  Visa historik");
-        System.out.println("7  Rensa transaktioner");
-        System.out.println("8  Återskapa TRANSACTIONS-tabellen");
-        System.out.println("────────────────────────────────────────");
-        System.out.print("Välj ett alternativ (0–8): ");
-
-        String choice = scanner.nextLine().trim();
-
-        switch (choice) {
-            case "0" -> ejectCard();
-            case "1" -> checkBalance();
-            case "2" -> {
-                System.out.print("\n Belopp att sätta in: ");
-                double amount = Double.parseDouble(scanner.nextLine());
-                depositCash(amount);
-            }
-            case "3" -> {
-                System.out.print("\n Belopp att ta ut: ");
-                double amount = Double.parseDouble(scanner.nextLine());
-                withdrawCash(amount);
-            }
-            case "4" -> showReceipt();
-            case "5" -> {
-                System.out.println("\n Tack för att du använde ATM-simulatorn!");
-                running = false;
-            }
-            case "6" -> showAllTransactions();
-            case "7" -> clearTransactions();
-            case "8" -> {
-                System.out.print("Är du säker på att du vill nollställa TRANSACTIONS-tabellen? (j/n): ");
-                String confirm = scanner.nextLine().trim().toLowerCase();
-                if (confirm.equals("j")) {
-                    Database.recreateTransactionsTable();
-                } else {
-                    System.out.println("Avbrutet.");
-                }
-            }
-            default -> System.out.println("Ogiltigt val. Försök igen.");
-        }
-
-        pause();
-        return running;
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // Transaktionshantering
-
-    private void skrivUtKvitto(String typ, double belopp, double saldo) {
-        System.out.println("\n KVITTO");
-        System.out.println("Typ: " + typ);
-        System.out.printf("Belopp: %.2f SEK\n", belopp);
-        System.out.printf("Tillgängligt saldo: %.2f SEK\n", saldo);
-        System.out.println("Tid: " + LocalDateTime.now());
-        System.out.println("────────────────────────────────────────");
-    }
-
-    private void saveTransaction(String type, double amount) {
-        if (loggedInUserId == -1) {
-            System.out.println("Ingen användare inloggad.");
+    public void sättInPengar(double amount) {
+        if (amount <= 0) {
+            System.out.println(" Beloppet måste vara större än 0.");
             return;
         }
 
-        String sql = "INSERT INTO transactions (userId, bankId, atmId, transactiontype, amount, currency, time) VALUES (?, 1, 1, ?, ?, 'SEK', datetime('now', 'localtime'))";
-
-        try (Connection conn = JDBCUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, loggedInUserId);
-            pstmt.setString(2, type);
-            pstmt.setDouble(3, amount);
-            pstmt.executeUpdate();
-            JDBCUtil.commit(conn);
-
-        } catch (SQLException e) {
-            System.out.println(" Fel vid sparande av transaktion: " + e.getMessage());
-        }
+        String konto = accountManager.getCurrentAccountType();
+        transactionService.saveTransaction(loggedInUserId, "Insättning", amount, konto);
+        transactionService.printReceipt("Insättning (" + konto + ")", amount, transactionService.getBalance(loggedInUserId, konto));
     }
 
-    private void showLastTransaction() {
-        String sql = "SELECT transactiontype, amount, time FROM transactions WHERE userId = ? ORDER BY transactionId DESC LIMIT 1";
+    public void taUtPengar(double amount) {
+        if (amount <= 0) {
+            System.out.println(" Beloppet måste vara större än 0.");
+            return;
+        }
+
+        String konto = accountManager.getCurrentAccountType();
+        double saldo = transactionService.getBalance(loggedInUserId, konto);
+        if (amount > saldo) {
+            System.out.println(" Otillräckligt saldo.");
+            return;
+        }
+
+        transactionService.saveTransaction(loggedInUserId, "Uttag", -amount, konto);
+        transactionService.printReceipt("Uttag (" + konto + ")", -amount, transactionService.getBalance(loggedInUserId, konto));
+    }
+
+    public double visaSaldo() {
+        String konto = accountManager.getCurrentAccountType();
+        double saldo = transactionService.getBalance(loggedInUserId, konto);
+        transactionService.printReceipt("Saldo (" + konto + ")", 0, saldo);
+        return saldo;
+    }
+
+    public void visaKvitto() {
+        String sql = "SELECT transactiontype, amount, time, accountType FROM transactions WHERE userId = ? ORDER BY transactionId DESC LIMIT 1";
 
         try (Connection conn = JDBCUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -247,72 +140,126 @@ public class MyATM implements ATM {
             pstmt.setInt(1, loggedInUserId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    skrivUtKvitto(rs.getString("transactiontype"), rs.getDouble("amount"), checkBalance(false));
-                } else {
-                    System.out.println("Inga transaktioner hittades.");
+                    transactionService.printReceipt(
+                            rs.getString("transactiontype") + " (" + rs.getString("accountType") + ")",
+                            rs.getDouble("amount"),
+                            transactionService.getBalance(loggedInUserId, rs.getString("accountType"))
+                    );
                 }
             }
 
         } catch (SQLException e) {
-            System.out.println(" Fel vid hämtning av transaktion: " + e.getMessage());
+            System.out.println(" Fel vid hämtning av kvitto: " + e.getMessage());
         }
     }
 
-    private void showAllTransactions() {
-        String sql = "SELECT transactiontype, amount, time FROM transactions WHERE userId = ? ORDER BY transactionId";
+    public void visaTransaktionshistorik() {
+        String sql = "SELECT transactiontype, amount, time, accountType FROM transactions WHERE userId = ? ORDER BY transactionId";
 
         try (Connection conn = JDBCUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, loggedInUserId);
             try (ResultSet rs = pstmt.executeQuery()) {
-                System.out.println("\n Historik:");
                 while (rs.next()) {
-                    System.out.printf("%s %.2f SEK (%s)\n",
+                    System.out.printf("%s %.2f SEK (%s) [%s]\n",
                             rs.getString("transactiontype"),
                             rs.getDouble("amount"),
-                            rs.getString("time"));
+                            rs.getString("time"),
+                            rs.getString("accountType"));
                 }
             }
 
         } catch (SQLException e) {
-            System.out.println(" Fel vid hämtning av historik: " + e.getMessage());
+            System.out.println(" Fel vid historik: " + e.getMessage());
         }
     }
 
-    private void clearTransactions() {
+    // ══════════════════════════════════════════════════════════════════════
+    // Rensa transaktioner (alla konton)
+
+    public void rensaTransaktioner() {
         String sql = "DELETE FROM transactions WHERE userId = ?";
 
         try (Connection conn = JDBCUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, loggedInUserId);
-            int rows = pstmt.executeUpdate();
+            int rader = pstmt.executeUpdate();
             JDBCUtil.commit(conn);
-            System.out.println("🧹 " + rows + " transaktioner raderades.");
+            System.out.println("🧹 Raderade " + rader + " transaktioner.");
 
         } catch (SQLException e) {
-            System.out.println(" Fel vid rensning: " + e.getMessage());
+            System.out.println(" Fel vid radering: " + e.getMessage());
         }
     }
 
-    private void pause() {
+    // ══════════════════════════════════════════════════════════════════════
+    // Rensa transaktioner för ett konto
+
+    public void rensaTransaktionerFörKonto(String kontoTyp) {
+        String sql = "DELETE FROM transactions WHERE userId = ? AND accountType = ?";
+
+        try (Connection conn = JDBCUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, loggedInUserId);
+            pstmt.setString(2, kontoTyp);
+            int rader = pstmt.executeUpdate();
+            JDBCUtil.commit(conn);
+            System.out.println("🧹 Raderade " + rader + " transaktioner för kontotyp: " + kontoTyp);
+
+        } catch (SQLException e) {
+            System.out.println(" Fel vid radering: " + e.getMessage());
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Överföring mellan konton
+
+    public void överförPengar(double belopp, String från, String till) {
+        if (belopp <= 0) {
+            System.out.println(" Beloppet måste vara större än 0.");
+            return;
+        }
+
+        double saldo = transactionService.getBalance(loggedInUserId, från);
+        if (saldo < belopp) {
+            System.out.println(" Otillräckligt saldo på " + från + "-kontot.");
+            return;
+        }
+
+        transactionService.saveTransaction(loggedInUserId, "Överföring ut", -belopp, från);
+        transactionService.saveTransaction(loggedInUserId, "Överföring in", belopp, till);
+        System.out.printf(" %.2f SEK överfört från %s till %s.\n", belopp, från, till);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Hjälpmetoder
+
+    public void pausa() {
         System.out.print("\nTryck Enter för att fortsätta...");
         scanner.nextLine();
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    //  Testfunktion för enhetstester
-
-    /**
-     * Metod för att sätta testanvändare (för JUnit-testning).
-     */
-    public void loginTestUser() {
-        this.loggedInUserId = 1;
-        this.loggedInUsername = "TestUser";
+    public void återskapaTransaktionstabell() {
+        Database.recreateTransactionsTable();
     }
 
-    public boolean isRunning() {
-        return false;
+    public void bytAktivtKonto(String val) {
+        accountManager.switchAccount(val);
+    }
+
+    public String getLoggedInUsername() {
+        return loggedInUsername;
+    }
+
+    public String getAccountType() {
+        return accountManager.getCurrentAccountType();
+    }
+
+    public void loginTestUser() {
+        loggedInUserId = 1;
+        loggedInUsername = "TestUser";
     }
 }

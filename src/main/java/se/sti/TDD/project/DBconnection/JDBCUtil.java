@@ -4,20 +4,26 @@ import java.sql.*;
 
 public class JDBCUtil {
 
-    private static final String URL = "jdbc:sqlite:identifier.sqlite";
+    // Välj databas beroende på om testmiljö är aktiv
+    private static final String PROD_URL = "jdbc:sqlite:identifier.sqlite";
+    private static final String TEST_URL = "jdbc:sqlite:test_transactions.sqlite";
+
     private static Connection connection;
 
-    // Ansluter till SQLite
+    // Hämta en anslutning till rätt databas
     public static Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection(URL);
+            boolean isTestEnv = Boolean.getBoolean("test.env");
+            String url = isTestEnv ? TEST_URL : PROD_URL;
+
+            connection = DriverManager.getConnection(url);
             connection.setAutoCommit(false);
-            System.out.println("Databasen är ansluten.");
+            System.out.println("Databasen är ansluten: " + (isTestEnv ? "TEST" : "PROD"));
         }
         return connection;
     }
 
-    // Stänger anslutningen
+    // Stäng anslutningen
     public static void closeConnection(Connection conn) {
         try {
             if (conn != null && !conn.isClosed()) {
@@ -31,9 +37,7 @@ public class JDBCUtil {
 
     public static void closeStatement(Statement stmt) {
         try {
-            if (stmt != null) {
-                stmt.close();
-            }
+            if (stmt != null) stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -41,9 +45,7 @@ public class JDBCUtil {
 
     public static void closeResultSet(ResultSet rs) {
         try {
-            if (rs != null) {
-                rs.close();
-            }
+            if (rs != null) rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -51,9 +53,7 @@ public class JDBCUtil {
 
     public static void commit(Connection conn) {
         try {
-            if (conn != null) {
-                conn.commit();
-            }
+            if (conn != null) conn.commit();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -61,9 +61,7 @@ public class JDBCUtil {
 
     public static void rollback(Connection conn) {
         try {
-            if (conn != null) {
-                conn.rollback();
-            }
+            if (conn != null) conn.rollback();
         } catch (SQLException e) {
             e.printStackTrace();
         }
