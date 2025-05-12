@@ -22,7 +22,7 @@ public class JDBCUtil {
         try {
             if (conn != null && !conn.isClosed()) {
                 conn.close();
-                System.out.println("Databasen är frånkopplad.");
+            //    System.out.println("Databasen är frånkopplad.");
             }
         } catch (SQLException e) {
             System.out.println("Fel vid frånkoppling: " + e.getMessage());

@@ -1,10 +1,12 @@
 package se.sti.TDD.project.Interfaces;
 
+import java.sql.SQLException;
+
 public interface ATM {
-    void insertCard(String cardNumber);  /*Simulerar att ett kort sätts in.*/
-    void enterPin(int pin); /*Autentiserar användaren med pinkod.*/
-    void withdrawCash(double amount);/*Tar ut pengar.*/
-    void depositCash(double amount); /*Sätter in pengar.*/
-    double checkBalance();
+    Boolean insertCard (String userName, String password) throws SQLException;  /*Simulerar att användaren loggas in.*/
+    void enterPin(int pin, int userId); /*Autentiserar användaren med pinkod.*/
+    void withdrawCash(int userId, int bankId, int ATMId,double amount);/*Tar ut pengar.*/
+    void depositCash(int userId, int bankId, int ATMId,double amount); /*Sätter in pengar.*/
+    double checkBalance(int userId);
     void ejectCard(); /*Avslutar sessionen och matar ut kortet.*/
 }
