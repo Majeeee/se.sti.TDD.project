@@ -12,7 +12,7 @@ public class JDBCUtil {
         if (connection == null || connection.isClosed()) {
             connection = DriverManager.getConnection(URL);
             connection.setAutoCommit(false);
-            System.out.println("Databasen är ansluten.");
+//            System.out.println("Databasen är ansluten.");
         }
         return connection;
     }

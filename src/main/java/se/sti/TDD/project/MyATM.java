@@ -10,51 +10,50 @@ import java.sql.SQLException;
 
 public class MyATM implements ATM {
 
-
     /*Entligen ProjectLoginService det kan ändra metoden för kunna ta kortnummer*/
     @Override
     public Boolean insertCard(String username, String password) throws SQLException {
-            Connection conn = null;
-            PreparedStatement pstmt = null;
-            ResultSet rs = null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
 //            boolean loginSuccessful = false;
 
-            String sql = "SELECT u.USERNAME, u.USERPASSWORD , u.USERID FROM USER u " +
-                    "WHERE USERNAME = ? AND USERPASSWORD = ?";
+        String sql = "SELECT u.USERNAME, u.USERPASSWORD , u.USERID FROM USER u " +
+                "WHERE USERNAME = ? " +
+                "AND USERPASSWORD = ?";
 
-           try {
-                conn = JDBCUtil.getConnection(); // Hämta databasanslutning
-                pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, username);
-                pstmt.setString(2, password);
-                rs = pstmt.executeQuery();
+        try {
+            conn = JDBCUtil.getConnection(); // Hämta databasanslutning
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, username);
+            pstmt.setString(2, password);
+            rs = pstmt.executeQuery();
 
-                if (rs.next()) {
-                    // Hämtar det hashade lösenordet från databasen
-                    String storedPasswordHash = rs.getString("USERPASSWORD");
+            if (rs.next()) {
+                // Hämtar det hashade lösenordet från databasen
+                String storedPasswordHash = rs.getString("USERPASSWORD");
 
-                    // Verifierar det inskrivna lösenordet mot det hashade lösenordet
-                    if (password.equals(storedPasswordHash)) {
-                        ProjectConstants.loginSuccessful = true; // Inloggningen lyckades
+                // Verifierar det inskrivna lösenordet mot det hashade lösenordet
+                if (password.equals(storedPasswordHash)) {
+                    ProjectConstants.loginSuccessful = true; // Inloggningen lyckades
 //                        System.out.println("Inloggning lyckades för användare: " + username);
-                    } else {
-                        System.out.println("Felaktigt lösenord för användare: " + username);
-                    }
                 } else {
-                    System.out.println("Ingen användare hittades med användernamn: " + username);
+                    System.out.println("Felaktigt lösenord för användare: " + username);
                 }
-            } catch (SQLException e) {
-                System.err.println("Ett fel uppstod vid exekvering av SELECT: " + e.getMessage());
-                e.printStackTrace();
-                throw e; // Vidarebefordra undantaget
-            } finally {
-                JDBCUtil.closeResultSet(rs);
-                JDBCUtil.closeStatement(pstmt);
-                JDBCUtil.closeConnection(conn);
+            } else {
+                System.out.println("Ingen användare hittades med användernamn: " + username);
             }
-    return ProjectConstants.loginSuccessful;
+        } catch (SQLException e) {
+            System.err.println("Ett fel uppstod vid exekvering av SELECT: " + e.getMessage());
+            e.printStackTrace();
+            throw e; // Vidarebefordra undantaget
+        } finally {
+            JDBCUtil.closeResultSet(rs);
+            JDBCUtil.closeStatement(pstmt);
+            JDBCUtil.closeConnection(conn);
+        }
+        return ProjectConstants.loginSuccessful;
     }
-
 
 
     @Override
@@ -63,12 +62,43 @@ public class MyATM implements ATM {
     }
 
     @Override
-    public void withdrawCash(int userId, int bankId, int ATMId,double amount) {
+    public void withdrawCash(int userId, int bankId, int ATMId, double amount) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        int transactinType = 1;
 
+        String sql = "INSERT INTO TRANSACTIONS (" +
+                "USERID, BANKID, ATMID, TRANSACTIONTYPE, AMOUNT, CURRENCY, TIME) " +
+                "VALUES (?, ?, ?, ?, ?, 'SEK', CURRENT_TIMESTAMP)";
+        try {
+            conn = JDBCUtil.getConnection(); // Hämta databasanslutning
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, bankId);
+            pstmt.setInt(3, ATMId);
+            pstmt.setInt(4, transactinType);
+            pstmt.setDouble(5, amount);
+
+            int rowsAffected = pstmt.executeUpdate(); // Kör INSERT
+            System.out.println(ProjectConstants.RED + "Rad(er) insatta: " + rowsAffected +
+                    "\n----------------------------------------------------------" + ProjectConstants.RESET);
+            JDBCUtil.commit(conn);
+
+
+        } catch (SQLException e) {
+            System.err.println("Ett fel uppstod vid exekvering av INSERT: " + e.getMessage());
+            JDBCUtil.rollback(conn);
+            e.printStackTrace();
+            throw e;
+        } finally {
+            JDBCUtil.closeStatement(pstmt);
+            JDBCUtil.closeConnection(conn);
+        }
     }
 
     @Override
-    public void depositCash(int userId, int bankId, int ATMId, double amount) {
+    public void depositCash(int userId, int bankId, int ATMId, double amount) throws SQLException {
 
     }
 
@@ -77,16 +107,13 @@ public class MyATM implements ATM {
         return 0;
     }
 
+
     @Override
     public void ejectCard() {
 
     }
 
 }
-
-
-
-
 
 
 //
@@ -103,30 +130,30 @@ public class MyATM implements ATM {
 //
 //    @Override
 //    public void withdrawCash(double amount) {
-////        if (amount <= 0) {
-////            System.out.println("Beloppet måste vara större än 0.");
-////            return;
-////        }
-////
-////        double balance = checkBalance();
-////        if (amount > balance) {
-////            System.out.println("Otillräckligt saldo.");
-////            return;
-////        }
+/// /        if (amount <= 0) {
+/// /            System.out.println("Beloppet måste vara större än 0.");
+/// /            return;
+/// /        }
+/// /
+/// /        double balance = checkBalance();
+/// /        if (amount > balance) {
+/// /            System.out.println("Otillräckligt saldo.");
+/// /            return;
+/// /        }
 //
-////        saveTransaction("Uttag", -amount);
-////        System.out.println("Uttag genomfört.");
+/// /        saveTransaction("Uttag", -amount);
+/// /        System.out.println("Uttag genomfört.");
 //    }
 //
 //    @Override
 //    public void depositCash(double amount) {
-////        if (amount <= 0) {
-////            System.out.println("Beloppet måste vara större än 0.");
-////            return ;
-////        }
+/// /        if (amount <= 0) {
+/// /            System.out.println("Beloppet måste vara större än 0.");
+/// /            return ;
+/// /        }
 //
-////        saveTransaction("Insättning", amount);
-////        System.out.println("Insättning genomförd.");
+/// /        saveTransaction("Insättning", amount);
+/// /        System.out.println("Insättning genomförd.");
 //    }
 //
 //    @Override
