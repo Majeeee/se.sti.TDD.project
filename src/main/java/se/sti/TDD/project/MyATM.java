@@ -99,14 +99,80 @@ public class MyATM implements ATM {
 
     @Override
     public void depositCash(int userId, int bankId, int ATMId, double amount) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        int transactinType = 2;
 
+        String sql = "INSERT INTO TRANSACTIONS (" +
+                "USERID, BANKID, ATMID, TRANSACTIONTYPE, AMOUNT, CURRENCY, TIME) " +
+                "VALUES (?, ?, ?, ?, ?, 'SEK', CURRENT_TIMESTAMP)";
+        try {
+            conn = JDBCUtil.getConnection(); // Hämta databasanslutning
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, bankId);
+            pstmt.setInt(3, ATMId);
+            pstmt.setInt(4, transactinType);
+            pstmt.setDouble(5, amount);
+
+            int rowsAffected = pstmt.executeUpdate(); // Kör INSERT
+            System.out.println(ProjectConstants.RED + "Rad(er) insatta: " + rowsAffected +
+                    "\n----------------------------------------------------------" + ProjectConstants.RESET);
+            JDBCUtil.commit(conn);
+
+
+        } catch (SQLException e) {
+            System.err.println("Ett fel uppstod vid exekvering av INSERT: " + e.getMessage());
+            JDBCUtil.rollback(conn);
+            e.printStackTrace();
+            throw e;
+        } finally {
+            JDBCUtil.closeResultSet(rs);
+            JDBCUtil.closeStatement(pstmt);
+            JDBCUtil.closeConnection(conn);
+        }
     }
 
     @Override
-    public double checkBalance(int userId) {
-        return 0;
-    }
+    public void checkBalance(int userId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        double balance = 0.0;
 
+        String sql = "SELECT SUM(CASE" +
+                " WHEN TRANSACTIONTYPE = '1' THEN AMOUNT " +
+                " WHEN TRANSACTIONTYPE = '2' THEN -AMOUNT" +
+                " ELSE 0" +
+                " END) AS balance" +
+                " FROM TRANSACTIONS" +
+                " WHERE USERID = ?";
+
+        try {
+            conn = JDBCUtil.getConnection(); // Hämta databasanslutning
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, userId);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                balance = rs.getDouble("balance");
+                System.out.println("Ditt saldo är: " + balance + " kr");
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Ett fel uppstod vid exekvering av SELECT: " + e.getMessage());
+            JDBCUtil.rollback(conn);
+            e.printStackTrace();
+            throw e;
+        } finally {
+            JDBCUtil.closeResultSet(rs);
+            JDBCUtil.closeStatement(pstmt);
+            JDBCUtil.closeConnection(conn);
+        }
+
+
+    }
 
     @Override
     public void ejectCard() {
@@ -158,22 +224,22 @@ public class MyATM implements ATM {
 //
 //    @Override
 //    public double checkBalance() {
-////        double balance = 0;
-////        String sql = "SELECT SUM(amount) as balance FROM transactions";
-////
-////        try (Connection conn = JDBCUtil.getConnection();
-////             PreparedStatement pstmt = conn.prepareStatement(sql);
-////             ResultSet rs = pstmt.executeQuery()) {
-////
-////            if (rs.next()) {
-////                balance = rs.getDouble("balance");
-////            }
-////
-////        } catch (Exception e) {
-////            System.out.println("Fel vid hämtning av saldo: " + e.getMessage());
-////        }
-////
-////        return balance;
+/// /        double balance = 0;
+/// /        String sql = "SELECT SUM(amount) as balance FROM transactions";
+/// /
+/// /        try (Connection conn = JDBCUtil.getConnection();
+/// /             PreparedStatement pstmt = conn.prepareStatement(sql);
+/// /             ResultSet rs = pstmt.executeQuery()) {
+/// /
+/// /            if (rs.next()) {
+/// /                balance = rs.getDouble("balance");
+/// /            }
+/// /
+/// /        } catch (Exception e) {
+/// /            System.out.println("Fel vid hämtning av saldo: " + e.getMessage());
+/// /        }
+/// /
+/// /        return balance;
 //   }
 //
 //    @Override
